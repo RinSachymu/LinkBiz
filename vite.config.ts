@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
 
 export default defineConfig({
-  base: '/LinkBiz/',
+  base: './', // 👈 Change this from '/LinkBiz/' to './'
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
