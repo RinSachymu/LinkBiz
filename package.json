@@ -1,5 +1,6 @@
 {
-  "name": "figma-make-app",
+  "name": "linkbiz",
+  "description": "Business matchmaking platform connecting companies and investors",
   "private": true,
   "version": "1.0.0",
   "type": "module",
