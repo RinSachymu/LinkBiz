@@ -1,0 +1,10 @@
+{
+  "description": "Connect businesses and investors through AI-driven matchmaking that recommends partnerships based on shared principles and credit history.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
