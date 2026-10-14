@@ -228,6 +228,116 @@ const aiRecommendations: (Business & { aiScore: number; aiReason: string })[] =
 
 type View = "discover" | "matches" | "ai" | "profile";
 type Mode = "b2b" | "b2i";
+type OrganizationType = "startup" | "business" | "government";
+
+type OnboardingProfile = {
+  organizationType: OrganizationType;
+  industry: string;
+  fullName: string;
+  organizationName: string;
+  role: string;
+  photo: string;
+  goals: string[];
+  plan: string;
+};
+
+const organizationTypes: {
+  id: OrganizationType;
+  eyebrow: string;
+  title: string;
+  description: string;
+}[] = [
+  {
+    id: "startup",
+    eyebrow: "BUILD",
+    title: "Startup",
+    description: "Early-stage teams looking for capital, talent, and market access.",
+  },
+  {
+    id: "business",
+    eyebrow: "SCALE",
+    title: "Established business",
+    description: "Operating companies ready for suppliers, partners, or expansion.",
+  },
+  {
+    id: "government",
+    eyebrow: "PROCURE",
+    title: "Government",
+    description: "Public-sector teams sourcing verified businesses and solutions.",
+  },
+];
+
+const industries = [
+  "Technology & SaaS",
+  "Financial Services",
+  "Manufacturing",
+  "Retail & Commerce",
+  "Healthcare",
+  "Agriculture",
+  "Logistics",
+  "Professional Services",
+  "Construction & Real Estate",
+  "Government & Public Services",
+];
+
+const goalOptions = [
+  { id: "Investor", detail: "Equity capital and strategic guidance" },
+  { id: "Funder", detail: "Grants, loans, and non-dilutive funding" },
+  { id: "Co-owner", detail: "A committed partner to build with" },
+  { id: "Supplier", detail: "Reliable products, materials, or services" },
+  { id: "Distributor", detail: "New channels and market reach" },
+  { id: "Technology partner", detail: "Technical capability and integrations" },
+  { id: "Government contracts", detail: "Public procurement opportunities" },
+  { id: "Business client", detail: "Qualified B2B customers" },
+];
+
+const plansByType: Record<
+  OrganizationType,
+  { name: string; price: string; description: string; features: string[] }[]
+> = {
+  startup: [
+    {
+      name: "Launch",
+      price: "FREE",
+      description: "Build your first high-intent network.",
+      features: ["10 connections / month", "Basic AI matches", "Verified profile"],
+    },
+    {
+      name: "Fundraise",
+      price: "₱1,490 / MO",
+      description: "Move faster with investor-ready tools.",
+      features: ["Unlimited connections", "Advanced AI reasoning", "Investor visibility"],
+    },
+  ],
+  business: [
+    {
+      name: "Growth",
+      price: "₱2,990 / MO",
+      description: "For teams opening new B2B channels.",
+      features: ["3 team seats", "Unlimited connections", "Partner analytics"],
+    },
+    {
+      name: "Scale",
+      price: "₱5,490 / MO",
+      description: "For multi-market partnership teams.",
+      features: ["10 team seats", "Priority recommendations", "CRM exports"],
+    },
+  ],
+  government: [
+    {
+      name: "Public Sector",
+      price: "VERIFIED ACCESS",
+      description: "A compliant workspace for public teams.",
+      features: ["Verified supplier pool", "Procurement shortlists", "Audit-ready activity"],
+    },
+    {
+      name: "Institution",
+      price: "CUSTOM",
+      description: "For departments and multi-agency programs.",
+      features: ["Unlimited seats", "Custom compliance", "Dedicated onboarding"],
+    },
+  ],
+};
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
@@ -237,9 +347,9 @@ function Tag({ label }: { label: string }) {
       className="text-xs font-medium px-2 py-0.5 rounded-sm border"
       style={{
         fontFamily: "var(--font-mono)",
-        borderColor: "#2a2a2a",
-        color: "#999",
-        background: "#111",
+        borderColor: "var(--color-border)",
+        color: "var(--color-muted-strong)",
+        background: "var(--color-surface)",
       }}
     >
       {label}
@@ -261,8 +371,8 @@ function NavButton({
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center gap-1 px-4 py-2 transition-all"
-      style={{ color: active ? "#c6ff00" : "#555" }}
+      className="nav-button flex flex-col items-center gap-1 px-4 py-2 transition-all"
+      style={{ color: active ? "var(--color-lime-dim)" : "var(--color-muted)" }}
     >
       <span className="text-xl">{icon}</span>
       <span
@@ -280,10 +390,10 @@ function NavButton({
 function BusinessCard({ b, style }: { b: Business; style?: React.CSSProperties }) {
   return (
     <div
-      className="rounded-2xl overflow-hidden flex flex-col"
+      className="business-card rounded-2xl overflow-hidden flex flex-col"
       style={{
-        background: "#111",
-        border: "1px solid #1e1e1e",
+        background: "var(--color-surface)",
+        border: "1px solid var(--color-border)",
         width: "100%",
         maxWidth: 380,
         ...style,
@@ -292,7 +402,7 @@ function BusinessCard({ b, style }: { b: Business; style?: React.CSSProperties }
       {/* Header strip */}
       <div
         className="flex items-center gap-4 p-5"
-        style={{ borderBottom: "1px solid #1a1a1a" }}
+        style={{ borderBottom: "1px solid var(--color-border)" }}
       >
         <div
           className="rounded-xl flex items-center justify-center text-lg font-bold flex-shrink-0"
@@ -310,11 +420,11 @@ function BusinessCard({ b, style }: { b: Business; style?: React.CSSProperties }
         <div className="min-w-0">
           <div
             className="font-semibold text-lg leading-tight truncate"
-            style={{ fontFamily: "var(--font-display)", color: "#f0ede8" }}
+            style={{ fontFamily: "var(--font-display)", color: "var(--color-text)" }}
           >
             {b.name}
           </div>
-          <div className="text-sm truncate" style={{ color: "#777" }}>
+          <div className="text-sm truncate" style={{ color: "var(--color-muted)" }}>
             {b.tagline}
           </div>
         </div>
@@ -322,7 +432,7 @@ function BusinessCard({ b, style }: { b: Business; style?: React.CSSProperties }
 
       {/* Body */}
       <div className="p-5 flex flex-col gap-4 flex-1">
-        <p className="text-sm leading-relaxed" style={{ color: "#aaa" }}>
+        <p className="text-sm leading-relaxed" style={{ color: "var(--color-muted-strong)" }}>
           {b.description}
         </p>
 
@@ -336,17 +446,17 @@ function BusinessCard({ b, style }: { b: Business; style?: React.CSSProperties }
             <div
               key={s.label}
               className="rounded-lg p-3 flex flex-col gap-1"
-              style={{ background: "#161616", border: "1px solid #202020" }}
+              style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-border)" }}
             >
               <span
                 className="text-xs"
-                style={{ color: "#555", fontFamily: "var(--font-mono)", fontSize: 9 }}
+                style={{ color: "var(--color-muted)", fontFamily: "var(--font-mono)", fontSize: 9 }}
               >
                 {s.label}
               </span>
               <span
                 className="text-sm font-semibold leading-tight"
-                style={{ color: "#ddd", fontFamily: "var(--font-mono)" }}
+                style={{ color: "var(--color-text)", fontFamily: "var(--font-mono)" }}
               >
                 {s.value}
               </span>
@@ -362,7 +472,7 @@ function BusinessCard({ b, style }: { b: Business; style?: React.CSSProperties }
         </div>
 
         {/* Location */}
-        <div className="flex items-center gap-2 text-sm" style={{ color: "#555" }}>
+        <div className="flex items-center gap-2 text-sm" style={{ color: "var(--color-muted)" }}>
           <span>📍</span>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>
             {b.location}
@@ -381,10 +491,10 @@ function BusinessCard({ b, style }: { b: Business; style?: React.CSSProperties }
 function InvestorCard({ inv, style }: { inv: Investor; style?: React.CSSProperties }) {
   return (
     <div
-      className="rounded-2xl overflow-hidden flex flex-col"
+      className="business-card rounded-2xl overflow-hidden flex flex-col"
       style={{
-        background: "#111",
-        border: "1px solid #1e1e1e",
+        background: "var(--color-surface)",
+        border: "1px solid var(--color-border)",
         width: "100%",
         maxWidth: 380,
         ...style,
@@ -392,7 +502,7 @@ function InvestorCard({ inv, style }: { inv: Investor; style?: React.CSSProperti
     >
       <div
         className="flex items-center gap-4 p-5"
-        style={{ borderBottom: "1px solid #1a1a1a" }}
+        style={{ borderBottom: "1px solid var(--color-border)" }}
       >
         <div
           className="rounded-xl flex items-center justify-center text-lg font-bold flex-shrink-0"
@@ -410,12 +520,12 @@ function InvestorCard({ inv, style }: { inv: Investor; style?: React.CSSProperti
         <div className="min-w-0">
           <div
             className="font-semibold text-lg leading-tight truncate"
-            style={{ fontFamily: "var(--font-display)", color: "#f0ede8" }}
+            style={{ fontFamily: "var(--font-display)", color: "var(--color-text)" }}
           >
             {inv.name}
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm" style={{ color: "#777" }}>{inv.type}</span>
+            <span className="text-sm" style={{ color: "var(--color-muted)" }}>{inv.type}</span>
             <span
               className="text-xs px-1.5 py-0.5 rounded"
               style={{
@@ -432,7 +542,7 @@ function InvestorCard({ inv, style }: { inv: Investor; style?: React.CSSProperti
       </div>
 
       <div className="p-5 flex flex-col gap-4 flex-1">
-        <p className="text-sm leading-relaxed" style={{ color: "#aaa" }}>
+        <p className="text-sm leading-relaxed" style={{ color: "var(--color-muted-strong)" }}>
           {inv.description}
         </p>
 
@@ -444,17 +554,17 @@ function InvestorCard({ inv, style }: { inv: Investor; style?: React.CSSProperti
             <div
               key={s.label}
               className="rounded-lg p-3 flex flex-col gap-1"
-              style={{ background: "#161616", border: "1px solid #202020" }}
+              style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-border)" }}
             >
               <span
                 className="text-xs"
-                style={{ color: "#555", fontFamily: "var(--font-mono)", fontSize: 9 }}
+                style={{ color: "var(--color-muted)", fontFamily: "var(--font-mono)", fontSize: 9 }}
               >
                 {s.label}
               </span>
               <span
                 className="text-sm font-semibold"
-                style={{ color: "#ddd", fontFamily: "var(--font-mono)" }}
+                style={{ color: "var(--color-text)", fontFamily: "var(--font-mono)" }}
               >
                 {s.value}
               </span>
@@ -468,7 +578,7 @@ function InvestorCard({ inv, style }: { inv: Investor; style?: React.CSSProperti
           ))}
         </div>
 
-        <div className="text-xs rounded-lg p-3" style={{ background: "#0d1a0d", border: "1px solid #1a2e1a", color: "#7bc47f", fontFamily: "var(--font-mono)" }}>
+        <div className="text-xs rounded-lg p-3" style={{ background: "var(--color-lime-wash)", border: "1px solid var(--color-lime-border)", color: "var(--color-lime-dim)", fontFamily: "var(--font-mono)" }}>
           ✓ REQUIREMENTS: {inv.requirements}
         </div>
       </div>
@@ -514,7 +624,7 @@ function DiscoverView({
   return (
     <div className="flex flex-col items-center gap-6 px-4 pt-4 pb-2 w-full max-w-md mx-auto">
       {/* Card stack */}
-      <div className="relative w-full" style={{ height: 520 }}>
+      <div className="discover-deck relative w-full" style={{ height: 520 }}>
         {/* Ghost card behind */}
         {next && (
           <div
@@ -561,10 +671,10 @@ function DiscoverView({
         {exhausted && (
           <div
             className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl"
-            style={{ border: "1px dashed #2a2a2a", background: "#0d0d0d" }}
+            style={{ border: "1px dashed var(--color-border)", background: "var(--color-surface)" }}
           >
             <div className="text-4xl">🔄</div>
-            <div style={{ fontFamily: "var(--font-display)", color: "#555", fontSize: 20 }}>
+            <div style={{ fontFamily: "var(--font-display)", color: "var(--color-muted)", fontSize: 20 }}>
               You've seen them all
             </div>
             <button
@@ -619,9 +729,9 @@ function DiscoverView({
             style={{
               width: 64,
               height: 64,
-              background: "#ffffff08",
-              border: "1px solid #2a2a2a",
-              color: "#555",
+              background: "var(--color-surface)",
+              border: "1px solid var(--color-border)",
+              color: "var(--color-muted)",
               fontSize: 22,
             }}
           >
@@ -632,7 +742,7 @@ function DiscoverView({
 
       <div
         className="text-center text-xs"
-        style={{ color: "#444", fontFamily: "var(--font-mono)" }}
+        style={{ color: "var(--color-muted)", fontFamily: "var(--font-mono)" }}
       >
         {index + 1} / {deck.length} — {mode === "b2b" ? "BUSINESSES" : "INVESTORS"}
       </div>
@@ -649,10 +759,10 @@ function MatchesView({ matches }: { matches: { name: string; accent: string; tim
     return (
       <div className="flex flex-col items-center justify-center gap-4 h-full px-8 text-center">
         <div className="text-5xl">🤝</div>
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "#555" }}>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "var(--color-muted)" }}>
           No connections yet
         </div>
-        <div className="text-sm" style={{ color: "#444" }}>
+        <div className="text-sm" style={{ color: "var(--color-muted)" }}>
           Swipe right on businesses or investors you want to connect with.
         </div>
       </div>
@@ -663,7 +773,7 @@ function MatchesView({ matches }: { matches: { name: string; accent: string; tim
     <div className="flex flex-col gap-2 px-4 py-4">
       <div
         className="text-xs mb-2 px-1"
-        style={{ color: "#555", fontFamily: "var(--font-mono)" }}
+        style={{ color: "var(--color-muted)", fontFamily: "var(--font-mono)" }}
       >
         {matches.length} CONNECTION{matches.length > 1 ? "S" : ""}
       </div>
@@ -673,8 +783,8 @@ function MatchesView({ matches }: { matches: { name: string; accent: string; tim
           onClick={() => setActive(active === i ? null : i)}
           className="w-full rounded-xl p-4 flex items-center gap-4 text-left transition-all"
           style={{
-            background: active === i ? "#161616" : "#0f0f0f",
-            border: `1px solid ${active === i ? m.accent + "55" : "#1e1e1e"}`,
+            background: active === i ? "var(--color-surface-2)" : "var(--color-surface)",
+            border: `1px solid ${active === i ? m.accent + "55" : "var(--color-border)"}`,
           }}
         >
           <div
@@ -691,10 +801,10 @@ function MatchesView({ matches }: { matches: { name: string; accent: string; tim
             {m.name.slice(0, 2).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-sm truncate" style={{ color: "#e0ddd8" }}>
+            <div className="font-semibold text-sm truncate" style={{ color: "var(--color-text)" }}>
               {m.name}
             </div>
-            <div className="text-xs mt-0.5" style={{ color: "#555", fontFamily: "var(--font-mono)" }}>
+            <div className="text-xs mt-0.5" style={{ color: "var(--color-muted)", fontFamily: "var(--font-mono)" }}>
               Matched {m.time}
             </div>
           </div>
@@ -710,9 +820,9 @@ function MatchesView({ matches }: { matches: { name: string; accent: string; tim
       {active !== null && (
         <div
           className="rounded-xl p-4 mt-2 slide-up"
-          style={{ background: "#0d0d0d", border: "1px solid #1e1e1e" }}
+          style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
         >
-          <div className="text-sm mb-3" style={{ color: "#555", fontFamily: "var(--font-mono)" }}>
+          <div className="text-sm mb-3" style={{ color: "var(--color-muted)", fontFamily: "var(--font-mono)" }}>
             START A CONVERSATION
           </div>
           <textarea
@@ -720,9 +830,9 @@ function MatchesView({ matches }: { matches: { name: string; accent: string; tim
             rows={3}
             className="w-full rounded-lg p-3 text-sm resize-none outline-none"
             style={{
-              background: "#161616",
-              border: "1px solid #2a2a2a",
-              color: "#ccc",
+              background: "var(--color-surface-2)",
+              border: "1px solid var(--color-border)",
+              color: "var(--color-text)",
               fontFamily: "var(--font-sans)",
             }}
           />
@@ -759,7 +869,7 @@ function AIPicksView({ onMatch }: { onMatch: (name: string, accent: string) => v
       {/* Header */}
       <div
         className="rounded-xl p-4 flex items-start gap-3"
-        style={{ background: "#0a1a0a", border: "1px solid #1a2e1a" }}
+        style={{ background: "var(--color-lime-wash)", border: "1px solid var(--color-lime-border)" }}
       >
         <div
           className="rounded-lg flex items-center justify-center text-xl flex-shrink-0 ai-pulse"
@@ -779,7 +889,7 @@ function AIPicksView({ onMatch }: { onMatch: (name: string, accent: string) => v
           >
             AI Match Engine
           </div>
-          <div className="text-sm" style={{ color: "#6a8a6a" }}>
+          <div className="text-sm" style={{ color: "var(--color-lime-dim)" }}>
             Analyzes shared principles, market overlap, and complementary capabilities to surface high-probability partnerships.
           </div>
         </div>
@@ -787,7 +897,7 @@ function AIPicksView({ onMatch }: { onMatch: (name: string, accent: string) => v
 
       <div
         className="text-xs px-1"
-        style={{ color: "#555", fontFamily: "var(--font-mono)" }}
+        style={{ color: "var(--color-muted)", fontFamily: "var(--font-mono)" }}
       >
         TOP RECOMMENDATIONS FOR YOUR PROFILE
       </div>
@@ -800,7 +910,7 @@ function AIPicksView({ onMatch }: { onMatch: (name: string, accent: string) => v
           <div
             key={b.id}
             className="rounded-xl overflow-hidden transition-all"
-            style={{ border: `1px solid ${isOpen ? b.accentColor + "44" : "#1e1e1e"}`, background: "#0f0f0f" }}
+            style={{ border: `1px solid ${isOpen ? b.accentColor + "44" : "var(--color-border)"}`, background: "var(--color-surface)" }}
           >
             <button
               onClick={() => setExpanded(isOpen ? null : i)}
@@ -824,21 +934,21 @@ function AIPicksView({ onMatch }: { onMatch: (name: string, accent: string) => v
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold truncate" style={{ fontFamily: "var(--font-display)", color: "#e0ddd8", fontSize: 15 }}>
+                <div className="font-semibold truncate" style={{ fontFamily: "var(--font-display)", color: "var(--color-text)", fontSize: 15 }}>
                   {b.name}
                 </div>
-                <div className="text-xs mt-0.5 truncate" style={{ color: "#666" }}>
+                <div className="text-xs mt-0.5 truncate" style={{ color: "var(--color-muted)" }}>
                   {b.industry} · {b.location}
                 </div>
               </div>
-              <span style={{ color: "#444", fontSize: 12 }}>{isOpen ? "▲" : "▼"}</span>
+              <span style={{ color: "var(--color-muted)", fontSize: 12 }}>{isOpen ? "▲" : "▼"}</span>
             </button>
 
             {isOpen && (
               <div className="px-4 pb-4 flex flex-col gap-3 slide-up">
                 <div
                   className="rounded-lg p-3 text-sm"
-                  style={{ background: "#0d1a0d", border: "1px solid #1a2e1a", color: "#8ab88a", lineHeight: 1.6 }}
+                  style={{ background: "var(--color-lime-wash)", border: "1px solid var(--color-lime-border)", color: "var(--color-lime-dim)", lineHeight: 1.6 }}
                 >
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#c6ff00", display: "block", marginBottom: 4 }}>
                     ⚡ WHY THIS MATCH
@@ -865,8 +975,8 @@ function AIPicksView({ onMatch }: { onMatch: (name: string, accent: string) => v
                   <button
                     className="px-4 py-2.5 rounded-lg text-sm transition-all"
                     style={{
-                      border: "1px solid #2a2a2a",
-                      color: "#555",
+                      border: "1px solid var(--color-border)",
+                      color: "var(--color-muted)",
                       fontFamily: "var(--font-mono)",
                     }}
                   >
@@ -884,35 +994,46 @@ function AIPicksView({ onMatch }: { onMatch: (name: string, accent: string) => v
 
 // ─── Profile View ──────────────────────────────────────────────────────────────
 
-function ProfileView() {
+function ProfileView({
+  profile,
+  onEditOnboarding,
+}: {
+  profile: OnboardingProfile;
+  onEditOnboarding: () => void;
+}) {
   const myBusiness: Business = {
     id: 0,
-    name: "NovaBridge Co.",
-    tagline: "Connecting capital with innovation",
-    industry: "Business Development",
+    name: profile.organizationName,
+    tagline: `${profile.role} · ${organizationTypes.find((item) => item.id === profile.organizationType)?.title}`,
+    industry: profile.industry,
     size: "11–50",
-    location: "New York, NY",
+    location: "Philippines",
     founded: "2023",
-    revenue: "$880K ARR",
-    principles: ["Transparency", "B2B SaaS", "Open Standards"],
-    description:
-      "We build tools that help companies find strategic partners and investors faster. Our platform uses AI to surface the right connections at the right time.",
+    revenue: "Verified",
+    principles: profile.goals.slice(0, 3),
+    description: `${profile.organizationName} is using LinkBiz to connect with ${profile.goals.join(", ").toLowerCase()}.`,
     accentColor: "#c6ff00",
-    initials: "NB",
-    seeking: "Strategic + Funding",
+    initials: profile.organizationName
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase(),
+    seeking: profile.goals.slice(0, 2).join(" + "),
   };
 
   return (
     <div className="flex flex-col gap-4 px-4 py-4">
       <div className="flex items-center justify-between mb-2">
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "#f0ede8" }}>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--color-text)" }}>
           Your Profile
         </div>
         <button
+          onClick={onEditOnboarding}
           className="text-sm px-3 py-1.5 rounded-lg"
           style={{
-            border: "1px solid #2a2a2a",
-            color: "#888",
+            border: "1px solid var(--color-border)",
+            color: "var(--color-muted-strong)",
             fontFamily: "var(--font-mono)",
             fontSize: 11,
           }}
@@ -923,34 +1044,54 @@ function ProfileView() {
 
       <BusinessCard b={myBusiness} />
 
+      <div className="profile-owner">
+        {profile.photo ? (
+          <img className="profile-owner__photo" src={profile.photo} alt={profile.fullName} />
+        ) : (
+          <div className="profile-owner__fallback">
+            {profile.fullName
+              .split(" ")
+              .map((word) => word[0])
+              .join("")
+              .slice(0, 2)}
+          </div>
+        )}
+        <div className="profile-owner__copy">
+          <span className="profile-owner__label">PROFILE OWNER</span>
+          <strong>{profile.fullName}</strong>
+          <span>{profile.role}</span>
+        </div>
+        <div className="profile-owner__verified">VERIFIED</div>
+      </div>
+
       {/* Settings blocks */}
       {[
-        { label: "DISCOVERY MODE", value: "Business + Investor", icon: "🔀" },
-        { label: "INDUSTRY FILTERS", value: "All Industries", icon: "🏭" },
-        { label: "DEAL STAGE", value: "Series A · Series B", icon: "📈" },
-        { label: "NOTIFICATIONS", value: "Instant matches", icon: "🔔" },
+        { label: "ACCOUNT TYPE", value: organizationTypes.find((item) => item.id === profile.organizationType)?.title, icon: "01" },
+        { label: "LOOKING FOR", value: profile.goals.join(" · "), icon: "02" },
+        { label: "SUBSCRIPTION", value: profile.plan, icon: "03" },
+        { label: "INDUSTRY", value: profile.industry, icon: "04" },
       ].map((row) => (
         <div
           key={row.label}
           className="flex items-center gap-3 p-4 rounded-xl"
-          style={{ background: "#0f0f0f", border: "1px solid #1a1a1a" }}
+          style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
         >
-          <span className="text-lg">{row.icon}</span>
+          <span className="profile-setting-index">{row.icon}</span>
           <div className="flex-1">
-            <div className="text-xs mb-0.5" style={{ color: "#555", fontFamily: "var(--font-mono)", fontSize: 9 }}>
+            <div className="text-xs mb-0.5" style={{ color: "var(--color-muted)", fontFamily: "var(--font-mono)", fontSize: 9 }}>
               {row.label}
             </div>
-            <div className="text-sm" style={{ color: "#bbb" }}>{row.value}</div>
+            <div className="text-sm" style={{ color: "var(--color-text)" }}>{row.value}</div>
           </div>
-          <span style={{ color: "#333" }}>›</span>
+          <span style={{ color: "var(--color-muted)" }}>›</span>
         </div>
       ))}
 
       <button
         className="mt-2 w-full py-3 rounded-xl text-sm"
         style={{
-          border: "1px solid #1e1e1e",
-          color: "#555",
+          border: "1px solid var(--color-border)",
+          color: "var(--color-muted)",
           fontFamily: "var(--font-mono)",
           letterSpacing: 1,
         }}
@@ -975,12 +1116,12 @@ function MatchToast({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-6"
-      style={{ background: "#000000cc" }}
+      style={{ background: "rgba(36, 35, 31, 0.48)", backdropFilter: "blur(6px)" }}
     >
       <div
         className="rounded-2xl p-8 flex flex-col items-center gap-4 text-center match-pop"
         style={{
-          background: "#111",
+          background: "var(--color-surface)",
           border: `1px solid ${accent}55`,
           maxWidth: 320,
           width: "100%",
@@ -1004,9 +1145,9 @@ function MatchToast({
           >
             It's a Match!
           </div>
-          <div className="text-sm" style={{ color: "#888" }}>
+          <div className="text-sm" style={{ color: "var(--color-muted-strong)" }}>
             You connected with{" "}
-            <span className="font-semibold" style={{ color: "#ddd" }}>
+            <span className="font-semibold" style={{ color: "var(--color-text)" }}>
               {name}
             </span>
           </div>
@@ -1028,7 +1169,7 @@ function MatchToast({
             onClick={onClose}
             className="w-full py-2.5 rounded-xl text-sm"
             style={{
-              color: "#555",
+              color: "var(--color-muted)",
               fontFamily: "var(--font-mono)",
             }}
           >
@@ -1040,6 +1181,319 @@ function MatchToast({
   );
 }
 
+// ─── Onboarding ────────────────────────────────────────────────────────────────
+
+function Onboarding({
+  initialProfile,
+  onComplete,
+}: {
+  initialProfile?: OnboardingProfile;
+  onComplete: (profile: OnboardingProfile) => void;
+}) {
+  const [step, setStep] = useState(0);
+  const [profile, setProfile] = useState<OnboardingProfile>(
+    initialProfile ?? {
+      organizationType: "startup",
+      industry: "",
+      fullName: "",
+      organizationName: "",
+      role: "",
+      photo: "",
+      goals: [],
+      plan: "",
+    },
+  );
+  const fileInput = useRef<HTMLInputElement>(null);
+  const plans = plansByType[profile.organizationType];
+
+  const canContinue =
+    step === 0 ||
+    (step === 1 && Boolean(profile.industry)) ||
+    (step === 2 &&
+      Boolean(profile.fullName.trim()) &&
+      Boolean(profile.organizationName.trim()) &&
+      Boolean(profile.role.trim())) ||
+    (step === 3 && profile.goals.length > 0) ||
+    (step === 4 && Boolean(profile.plan));
+
+  function chooseOrganizationType(organizationType: OrganizationType) {
+    setProfile((current) => ({ ...current, organizationType, plan: "" }));
+  }
+
+  function toggleGoal(goal: string) {
+    setProfile((current) => ({
+      ...current,
+      goals: current.goals.includes(goal)
+        ? current.goals.filter((item) => item !== goal)
+        : [...current.goals, goal],
+    }));
+  }
+
+  function handlePhoto(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () =>
+      setProfile((current) => ({ ...current, photo: String(reader.result) }));
+    reader.readAsDataURL(file);
+  }
+
+  function continueFlow() {
+    if (!canContinue) return;
+    if (step < 4) {
+      setStep((current) => current + 1);
+      return;
+    }
+    onComplete(profile);
+  }
+
+  function skipIdentity() {
+    setProfile((current) => ({
+      ...current,
+      fullName: current.fullName.trim() || "LinkBiz Member",
+      organizationName:
+        current.organizationName.trim() ||
+        (current.organizationType === "startup" ? "Stealth Startup" : "Organization profile"),
+      role:
+        current.role.trim() ||
+        (current.organizationType === "startup" ? "Founder" : "Representative"),
+    }));
+    setStep(3);
+  }
+
+  const stepMeta = [
+    ["YOUR ORGANIZATION", "What are you building?", "Choose the profile that best describes your organization today."],
+    ["BUSINESS CATEGORY", "Where do you operate?", "This helps the matching engine understand your market and recommend relevant partners."],
+    ["PROFESSIONAL PROFILE", "Put a name to the business.", "Verified identities build trust. Add the person who will represent this organization."],
+    ["MATCH INTENT", "What do you need next?", "Select every outcome that matters. You can change these priorities at any time."],
+    ["YOUR LINKBIZ PLAN", "Choose your access level.", `Plans tailored for ${profile.organizationType === "government" ? "public-sector teams" : profile.organizationType === "business" ? "established businesses" : "startups"}.`],
+  ];
+
+  return (
+    <div className="onboarding-shell">
+      <div className="onboarding-grid" aria-hidden="true" />
+      <header className="onboarding-header">
+        <div className="onboarding-brand">
+          Link<span>B</span>iz
+        </div>
+        <div className="onboarding-progress-copy">
+          <span>PROFILE SETUP</span>
+          <strong>{String(step + 1).padStart(2, "0")} / 05</strong>
+        </div>
+      </header>
+
+      <main className="onboarding-main">
+        <div className="onboarding-progress" aria-label={`Step ${step + 1} of 5`}>
+          {[0, 1, 2, 3, 4].map((item) => (
+            <div key={item} className={item <= step ? "is-active" : ""} />
+          ))}
+        </div>
+
+        <section className="onboarding-stage" key={step}>
+          <div className="onboarding-intro">
+            <span className="onboarding-eyebrow">{stepMeta[step][0]}</span>
+            <h1>{stepMeta[step][1]}</h1>
+            <p>{stepMeta[step][2]}</p>
+          </div>
+
+          {step === 0 && (
+            <div className="selection-grid selection-grid--three">
+              {organizationTypes.map((item, index) => {
+                const selected = profile.organizationType === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    className={`choice-card ${selected ? "is-selected" : ""}`}
+                    onClick={() => chooseOrganizationType(item.id)}
+                    type="button"
+                  >
+                    <span className="choice-card__number">0{index + 1}</span>
+                    <span className="choice-card__eyebrow">{item.eyebrow}</span>
+                    <strong>{item.title}</strong>
+                    <span className="choice-card__description">{item.description}</span>
+                    <span className="choice-card__check">{selected ? "SELECTED" : "SELECT"}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {step === 1 && (
+            <div className="industry-grid">
+              {industries.map((industry, index) => (
+                <button
+                  key={industry}
+                  type="button"
+                  className={profile.industry === industry ? "is-selected" : ""}
+                  onClick={() => setProfile((current) => ({ ...current, industry }))}
+                >
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <strong>{industry}</strong>
+                  <i>{profile.industry === industry ? "SELECTED" : "+"}</i>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="identity-layout">
+              <div className="photo-uploader">
+                <button type="button" onClick={() => fileInput.current?.click()}>
+                  {profile.photo ? (
+                    <img src={profile.photo} alt="Professional profile preview" />
+                  ) : (
+                    <span className="photo-uploader__empty">
+                      <b>+</b>
+                      <strong>ADD PHOTO</strong>
+                      <small>JPG OR PNG · MAX 5MB</small>
+                    </span>
+                  )}
+                </button>
+                <input
+                  ref={fileInput}
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  onChange={handlePhoto}
+                  tabIndex={-1}
+                />
+                <p>A clear, professional headshot helps partners know who they are meeting.</p>
+              </div>
+              <div className="form-stack">
+                <label>
+                  <span>FULL NAME</span>
+                  <input
+                    value={profile.fullName}
+                    onChange={(event) =>
+                      setProfile((current) => ({ ...current, fullName: event.target.value }))
+                    }
+                    placeholder="e.g. Alex Rivera"
+                  />
+                </label>
+                <label>
+                  <span>ORGANIZATION NAME</span>
+                  <input
+                    value={profile.organizationName}
+                    onChange={(event) =>
+                      setProfile((current) => ({
+                        ...current,
+                        organizationName: event.target.value,
+                      }))
+                    }
+                    placeholder="e.g. Northstar Labs"
+                  />
+                </label>
+                <label>
+                  <span>YOUR ROLE</span>
+                  <input
+                    value={profile.role}
+                    onChange={(event) =>
+                      setProfile((current) => ({ ...current, role: event.target.value }))
+                    }
+                    placeholder="e.g. Founder & CEO"
+                  />
+                </label>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <>
+              <div className="goal-grid">
+                {goalOptions.map((goal, index) => {
+                  const selected = profile.goals.includes(goal.id);
+                  return (
+                    <button
+                      type="button"
+                      key={goal.id}
+                      className={selected ? "is-selected" : ""}
+                      onClick={() => toggleGoal(goal.id)}
+                    >
+                      <span className="goal-grid__index">{String(index + 1).padStart(2, "0")}</span>
+                      <span className="goal-grid__copy">
+                        <strong>{goal.id}</strong>
+                        <small>{goal.detail}</small>
+                      </span>
+                      <span className="goal-grid__toggle">{selected ? "✓" : "+"}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="selection-count">
+                <strong>{String(profile.goals.length).padStart(2, "0")}</strong>
+                <span>PRIORITIES SELECTED</span>
+              </div>
+            </>
+          )}
+
+          {step === 4 && (
+            <div className="plan-grid">
+              {plans.map((plan, index) => {
+                const selected = profile.plan === plan.name;
+                return (
+                  <button
+                    type="button"
+                    key={plan.name}
+                    className={`plan-card ${selected ? "is-selected" : ""}`}
+                    onClick={() =>
+                      setProfile((current) => ({ ...current, plan: plan.name }))
+                    }
+                  >
+                    {index === 1 && <span className="plan-card__recommended">RECOMMENDED</span>}
+                    <span className="plan-card__type">
+                      {profile.organizationType.toUpperCase()} PLAN
+                    </span>
+                    <strong className="plan-card__name">{plan.name}</strong>
+                    <span className="plan-card__price">{plan.price}</span>
+                    <p>{plan.description}</p>
+                    <ul>
+                      {plan.features.map((feature) => (
+                        <li key={feature}>— {feature}</li>
+                      ))}
+                    </ul>
+                    <span className="plan-card__action">
+                      {selected ? "PLAN SELECTED" : "CHOOSE PLAN"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <footer className="onboarding-actions">
+          <button
+            type="button"
+            className="onboarding-back"
+            disabled={step === 0}
+            onClick={() => setStep((current) => Math.max(0, current - 1))}
+          >
+            ← BACK
+          </button>
+          <div className="onboarding-actions__forward">
+            {step === 2 && (
+              <button
+                type="button"
+                className="onboarding-skip"
+                onClick={skipIdentity}
+              >
+                SKIP FOR NOW
+              </button>
+            )}
+            <button
+              type="button"
+              className="onboarding-continue"
+              disabled={!canContinue}
+              onClick={continueFlow}
+            >
+              {step === 4 ? "ENTER LINKBIZ" : "CONTINUE"} <span>→</span>
+            </button>
+          </div>
+        </footer>
+      </main>
+    </div>
+  );
+}
+
 // ─── App ───────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -1047,6 +1501,8 @@ export default function App() {
   const [mode, setMode] = useState<Mode>("b2b");
   const [matches, setMatches] = useState<{ name: string; accent: string; time: string }[]>([]);
   const [toast, setToast] = useState<{ name: string; accent: string } | null>(null);
+  const [profile, setProfile] = useState<OnboardingProfile | null>(null);
+  const [editingProfile, setEditingProfile] = useState(false);
 
   function handleMatch(name: string, accent: string) {
     const now = new Date();
@@ -1055,26 +1511,46 @@ export default function App() {
     setToast({ name, accent });
   }
 
+  function completeOnboarding(nextProfile: OnboardingProfile) {
+    setProfile(nextProfile);
+    setMode(
+      nextProfile.goals.some((goal) => goal === "Investor" || goal === "Funder")
+        ? "b2i"
+        : "b2b",
+    );
+    setEditingProfile(false);
+    setView("discover");
+  }
+
+  if (!profile || editingProfile) {
+    return (
+      <Onboarding
+        initialProfile={profile ?? undefined}
+        onComplete={completeOnboarding}
+      />
+    );
+  }
+
   return (
     <div
-      className="flex flex-col h-full max-w-lg mx-auto relative"
-      style={{ background: "#080808" }}
+      className="app-shell flex flex-col h-full max-w-lg mx-auto relative"
+      style={{ background: "var(--color-bg)" }}
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0"
-        style={{ borderBottom: "1px solid #141414" }}
+        className="app-header flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0"
+        style={{ borderBottom: "1px solid var(--color-border)" }}
       >
-        <div>
+        <div className="app-brand-lockup">
           <div
-            className="font-black tracking-tight"
-            style={{ fontFamily: "var(--font-display)", fontSize: 24, color: "#f0ede8", fontStyle: "italic" }}
+            className="app-logo font-black tracking-tight"
+            style={{ fontFamily: "var(--font-display)", fontSize: 24, color: "var(--color-text)", fontStyle: "italic" }}
           >
             Link<span style={{ color: "#c6ff00" }}>B</span>iz
           </div>
           <div
-            className="text-xs"
-            style={{ color: "#444", fontFamily: "var(--font-mono)", letterSpacing: 1 }}
+            className="app-brand-subtitle text-xs"
+            style={{ color: "var(--color-muted)", fontFamily: "var(--font-mono)", letterSpacing: 1 }}
           >
             BUSINESS MATCHMAKING
           </div>
@@ -1084,7 +1560,7 @@ export default function App() {
         {view === "discover" && (
           <div
             className="flex rounded-lg overflow-hidden"
-            style={{ border: "1px solid #222", background: "#0d0d0d" }}
+            style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}
           >
             {(["b2b", "b2i"] as Mode[]).map((m) => (
               <button
@@ -1094,7 +1570,7 @@ export default function App() {
                 style={{
                   fontFamily: "var(--font-mono)",
                   background: mode === m ? "#c6ff00" : "transparent",
-                  color: mode === m ? "#080808" : "#555",
+                  color: mode === m ? "var(--color-ink)" : "var(--color-muted)",
                   letterSpacing: 0.5,
                 }}
               >
@@ -1128,13 +1604,18 @@ export default function App() {
         )}
         {view === "matches" && <MatchesView matches={matches} />}
         {view === "ai" && <AIPicksView onMatch={handleMatch} />}
-        {view === "profile" && <ProfileView />}
+        {view === "profile" && (
+          <ProfileView
+            profile={profile}
+            onEditOnboarding={() => setEditingProfile(true)}
+          />
+        )}
       </div>
 
       {/* Bottom nav */}
       <div
-        className="flex justify-around items-center py-2 flex-shrink-0"
-        style={{ borderTop: "1px solid #141414", background: "#080808" }}
+        className="app-bottom-nav flex justify-around items-center py-2 flex-shrink-0"
+        style={{ borderTop: "1px solid var(--color-border)", background: "var(--color-surface)" }}
       >
         <NavButton
           icon="⚡"
