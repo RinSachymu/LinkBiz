@@ -22,17 +22,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
-      - name: Install dependencies
-        run: npm install
+      - name: Enable Corepack (provides pnpm)
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.20.0 --activate
+
+      - name: Install dependencies (pnpm)
+        run: pnpm install --frozen-lockfile
 
       - name: Build app
-        run: npm run build
+        run: pnpm build
 
       - name: Ensure Pages compatibility
         run: touch dist/.nojekyll
